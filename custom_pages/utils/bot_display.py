@@ -7,21 +7,27 @@ from config import EMOJI_OPTIONS, ENGINE_OPTIONS, ENGINE_NAMES, LOGGER
 import importlib
 import os
 
+
+#  参数：bot_manager 是管理机器人的对象，prompt 是用户输入的提示信息，show_bots 是一个包含要显示的机器人信息的列表
 def display_active_bots(bot_manager, prompt, show_bots):
-    num_bots = len(show_bots)
-    num_cols = min(2, num_bots)
-    cols = st.columns(num_cols)
+    num_bots = len(show_bots)       # 当前显示的bot数量
+    num_cols = min(2, num_bots)     # 最多显示两列
+    cols = st.columns(num_cols)     # 创建列对象
 
     for i, bot in enumerate(show_bots):
-        if not bot['enable']:
+        if not bot['enable']:       # 如果机器人被禁用，则跳过
             continue
         col = cols[i % num_cols]
-        with col:
+        with col:                   # 在当前列中创建两个子列：button_box 和 title_box，用于放置按钮和标题
             button_box, title_box = st.columns([1, 10], gap="small")
-            
             # 获取当前bot的历史记录
             current_history = bot_manager.get_current_history_by_bot(bot)
             
+            # 如果有用户输入的提示信息 prompt，则执行以下操作：
+            # 调用 get_response_from_bot 函数获取机器人的响应。
+            # 将用户的提示和机器人的响应添加到机器人的对话历史中。
+            # 调用 fix_history_names 方法修复历史记录中的名称问题。
+            # 更新当前机器人的对话历史记录
             if prompt:
                 response_content = get_response_from_bot(prompt, bot, bot_manager.get_current_history_by_bot(bot))
                 bot_manager.add_message_to_history(bot['id'], {"role": "user", "content": prompt})
@@ -30,8 +36,9 @@ def display_active_bots(bot_manager, prompt, show_bots):
                 current_history = bot_manager.get_current_history_by_bot(bot)
 
             if current_history:
-                display_chat(bot, current_history)
+                display_chat(bot, current_history)  # 如果有对话历史记录，则调用 display_chat 函数显示对话
 
+                # 在 button_box 中显示机器人的头像，在 title_box 中显示机器人的标题
                 with button_box:
                     show_bot_avatar(bot)
                 with title_box:

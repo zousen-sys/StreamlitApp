@@ -51,8 +51,8 @@ class ChatRouter:
         """
         
         history = history[-self.history_length:]
-
-        LOGGER.info(f"Sending message with system_prompt: {self.system_prompt}")
+        # 001 打印系统提示词
+        # LOGGER.info(f"Sending message with system_prompt: {self.system_prompt}")
 
         return str(self._call_engine_chat(prompt, history, input_type=input_type, image=image, tools=tools))
 
@@ -72,8 +72,8 @@ class ChatRouter:
         """
 
         group_history = group_history[-self.group_history_length:]
-
-        LOGGER.info(f"Sending message with system_prompt: {self.system_prompt}")
+        # 001
+        # LOGGER.info(f"Sending message with system_prompt: {self.system_prompt}")
         
         return str(self._call_engine_chat(prompt, group_history, input_type=input_type, image=image, tools=tools))
         
@@ -216,30 +216,32 @@ class ChatRouter:
         except Exception as e:
             return "错误: " + str(e)
     
+    # 通过OpenAI客户端与Qwen模型进行交互，发送用户的输入和对话历史，接收模型的响应，并返回模型的回复内容
     def _qwen_chat(self, prompt, history):
-        # 实现与Qwen的交互
+        # 001 实现与Qwen的交互
         try:
             client = OpenAI(
                 api_key=self.api_key,
                 base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
             )
 
-            messages = self._join_messages(prompt, history)
-            messages = self._fix_messages(messages)
+            messages = self._join_messages(prompt, history)     # 调用 _join_messages 方法将 prompt 和 history 合并成适合API输入的格式
+            messages = self._fix_messages(messages)             # 调用 _fix_messages 方法对消息格式进行修正，确保它们符合API的要求
 
             if not messages:
                 return
 
-            LOGGER.info(f'  messages:\n\n\n {messages}')
-
+            # LOGGER.info(f'  qwen messages:\n\n\n {messages}')
+            # 使用 client.chat.completions.create 方法向Qwen模型发送请求，获取模型的响应
             completion = client.chat.completions.create(
                 model=self.model,
                 messages=messages,
-                temperature=self.temperature,
+                temperature=self.temperature,       # temperature 参数控制生成文本的随机性，值越低，生成的文本越确定
             )
+            # 将一个 Pydantic 模型实例序列化为 JSON 字符串的方法。Pydantic 是一个数据验证和设置管理的库，它使用 Python 类型注解来验证数据
+            # LOGGER.info(f'  response:\n\n\n {completion.model_dump_json()}')
 
-            LOGGER.info(f'  response:\n\n\n {completion.model_dump_json()}')
-
+            # 检查API响应是否有可用的选项；如果有，返回第一个选项中的消息内容，如果没有，返回错误信息。
             if completion.choices and len(completion.choices) > 0:
                 return completion.choices[0].message.content
             else:
@@ -305,7 +307,7 @@ class ChatRouter:
                 messages=messages,
                 temperature=self.temperature,
             )
-
+            
             LOGGER.info(f'  response:\n\n\n {completion.model_dump_json()}')
 
             if completion.choices and len(completion.choices) > 0:
@@ -676,8 +678,15 @@ class ChatRouter:
         return messages
 
     def _fix_messages(self, messages):
+        # 001 携带历史记录
+        # 对于每条消息，创建一个新的字典，其中包含 role 和 content 两个键。
+        # role 的值直接从原消息中获取。
+        # content 的值尝试从原消息中获取，如果 content 不存在，则使用空字符串 "" 作为默认值。
+        # 只有当消息的 content 不为空时，这条消息才会被包含在新列表中
         messages = [{"role": msg.get("role"), "content": str(msg.get("content",""))} for msg in messages if msg['content']]
+        # 检查修正后的 messages 列表是否非空，并且列表中最后一条消息的 role 是否不是 'user',如果是这种情况，将最后一条消息的 role 修改为 'user'。
         if messages and messages[-1]['role'] != 'user':
             messages[-1]['role'] = 'user'
-        LOGGER.info(messages)
+        # LOGGER.info(messages)
+        # LOGGER.info("fix_messages: \n\n\n" + str(messages) + "\n\n\n")
         return messages

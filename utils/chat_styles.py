@@ -88,7 +88,7 @@ def get_chat_container_style():
         }
         .copy-button {
             visibility: hidden;
-            font-size: 1.2em;
+            font-size: 1.0em;
             margin: 0 8px;
             border: none;
             border-radius: 5px;

@@ -128,6 +128,7 @@ class UserManager:
             LOGGER.error(f"Error verifying token: {str(e)}")
         return False
 
+    # 001
     def save_session_state_to_file(self):
         if not self._token:
             return
@@ -139,7 +140,7 @@ class UserManager:
             if key not in ['logged_in', 'username', 'bots', 'default_bot', 'chat_config']:
                 del session_data[key]
         
-        LOGGER.info(f"Saving session state. Username: {session_data.get('username')}")
+        LOGGER.info(f"Saving session state. Username: {session_data.get('username')}\n")
         data = json.dumps(session_data)
         self.save_token_to_file(data)
 

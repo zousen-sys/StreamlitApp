@@ -9,15 +9,29 @@ import re
 LOGGER = logging.getLogger(__name__)
 
 def render_sidebar():
-    bot_manager = st.session_state.bot_manager
-    chat_config = bot_manager.get_chat_config()
+    """
+    渲染侧边栏界面，提供用户信息、聊天设置和Bot管理功能。
+
+    功能包括：
+    - 显示当前用户信息和警告信息。
+    - 提供导入配置和修改密码的选项。
+    - 切换聊天模式（对话模式和群聊模式）。
+    - 更新聊天配置，包括强制系统提示词和历史对话条数。
+    - 管理群聊历史话题和普通历史话题的选择。
+    - 显示和管理Bot的状态，允许编辑和新增Bot。
+
+    使用方法：
+    在Streamlit应用中调用此函数以渲染侧边栏。
+    """
+    bot_manager = st.session_state.bot_manager      # 获取当前Bot管理器
+    chat_config = bot_manager.get_chat_config()     # 获取当前聊天配置
 
     with st.sidebar:
-
+        # 用户信息和设置
         with st.expander("我的"):
             st.markdown(f"当前用户：{st.session_state.username}")
             st.warning("不要把您的密码告诉任何人，以免大模型密钥被盗用！")
-            
+            # 非访客用户可以导入配置或修改密码
             if st.session_state.username not in GUEST_USERNAMES:
                 if SHOW_SECRET_INFO or not st.session_state.bots:
                     if st.button("导入配置", use_container_width=True):
@@ -25,7 +39,7 @@ def render_sidebar():
                 if st.button("修改密码", use_container_width=True):
                     st.session_state.page = "change_password_page"
                     st.rerun()
-
+            # 退出登录功能
             if st.button("退出登录", use_container_width=True):
                 confirm_action_logout()
         
@@ -127,9 +141,15 @@ def render_sidebar():
                 st.session_state.avatar = random.choice(EMOJI_OPTIONS)
                 add_new_bot()
 
-
+# @st.dialog 是 Streamlit 提供的一个装饰器，用于创建自定义对话框（dialog）。通过这个装饰器，你可以定义一个函数，该函数会在特定条件下显示一个对话框，通常用于确认操作或提示用"""
 @st.dialog('清空所有历史对话', width='small')
 def confirm_action_clear_historys():
+    """
+    确认清空所有历史对话的对话框。
+    该函数创建一个对话框，询问用户是否确定要清理所有历史话题。用户可以选择确认或取消操作。
+    如果用户确认，调用 `bot_manager.clear_all_histories()` 方法清除历史记录，并重新加载页面。
+    如果用户选择取消，则页面将重新加载而不进行任何更改。
+    """
     bot_manager = st.session_state.bot_manager
     st.markdown('确定要清理所有历史话题吗？')
     st.warning('此操作不可撤销。', icon="⚠️")
@@ -142,7 +162,7 @@ def confirm_action_clear_historys():
         if st.button("取消", key="cancel_button", use_container_width=True):
             st.rerun()
 
-
+# 使用Streamlit的dialog装饰器创建一个名为'清空所有历史对话'的对话框，并设置宽度为'small'
 @st.dialog('清空所有历史群聊', width='small')
 def confirm_action_clear_grouop_histsorys():
     bot_manager = st.session_state.bot_manager

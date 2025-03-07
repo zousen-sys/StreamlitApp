@@ -6,8 +6,9 @@ from custom_pages.utils.dialogs import add_new_bot
 def display_welcome_message(bot_manager):
     col1, col2 = st.columns([1,1], gap="large")
     with col1:
-        st.markdown("## 快速开始")
+        st.markdown("## 快速开始")      # 在第一列中使用Markdown语法显示二级标题“快速开始”。
         if st.session_state.bots:
+            # 如果所有机器人的 'enable' 属性都是False，则执行以下代码块。
             if all(not b['enable'] for b in st.session_state.bots):
                 if st.button("启用所有Bot"):
                     for bot in st.session_state.bots:
@@ -21,7 +22,7 @@ def display_welcome_message(bot_manager):
                 st.session_state.avatar = random.choice(EMOJI_OPTIONS)
                 add_new_bot()
         st.markdown("您可以添加很多Bot好友，他们会以接龙的方式和您聊天")
-        st.markdown("了解更多请访问[MultiBot-Chat开源项目主页](https://gitee.com/gptzm/multibot-chat)")
+        # st.markdown("了解更多请访问[MultiBot-Chat开源项目主页](https://gitee.com/gptzm/multibot-chat)")
     with col2:
         if st.session_state.page == "group_page":
             st.markdown("## 群聊模式")

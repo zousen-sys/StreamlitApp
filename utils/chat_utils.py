@@ -82,38 +82,46 @@ class CodeExtension(Extension):
     def extendMarkdown(self, md):
         md.preprocessors.register(CodeProcessor(md), 'code_processor', 175)
 
-# 移除原有的process_svg_content函数
-
+# 移除原有的 process_svg_content 函数
+# 001 从一个聊天机器人获取响应
 def get_response_from_bot(prompt, bot, history):
+    # bot_manager 用来管理聊天机器人配置和状态的一个类实例
     bot_manager = st.session_state.bot_manager
-    # 每次调用时获取最新的chat_config
+    # 获取最新的聊天配置。这个配置可能包含了机器人的行为设置、回复模板等
     latest_chat_config = bot_manager.get_chat_config()
-    LOGGER.info(f"Latest chat_config: {latest_chat_config}")
+    # LOGGER.info(f"Latest chat_config: {latest_chat_config}")
+
+    # 创建一个 ChatRouter 对象，它可能负责根据配置将消息路由到正确的处理逻辑
     chat_router = ChatRouter(bot, latest_chat_config)
+    # 使用 ChatRouter 的 send_message 方法发送 prompt 消息，并附带对话历史 history，然后接收机器人的响应内容
     response_content = chat_router.send_message(prompt, history)
-    LOGGER.info(f"Response content: {response_content}")
+    # 日志记录
+    # LOGGER.info(f"Single Response: {response_content}")
     return response_content
 
 def get_response_from_bot_group(prompt, bot, group_history):
     bot_manager = st.session_state.bot_manager
     # 每次调用时获取最新的chat_config
     latest_chat_config = bot_manager.get_chat_config()
-    LOGGER.info(f"Latest chat_config for group chat: {latest_chat_config}")
+    # LOGGER.info(f"Latest chat_config for group chat: {latest_chat_config}")
     chat_router = ChatRouter(bot, latest_chat_config)
     response_content = chat_router.send_message_group(prompt, group_history)
-    LOGGER.info(f"Response content: {response_content}")
+    # 日志记录
+    # LOGGER.info(f"Group Response: {response_content}")
     return response_content
 
+# bot（包含机器人信息的字典）和 history（聊天历史的列表）
 def display_chat(bot, history):
-    if not bot:
+    if not bot:     
         return
-
+    # 使用 f-string 初始化一个 HTML 字符串 bot_html，其中包含一些内联样式和一个带有特定 ID 的 div 容器
     bot_html = f"""
         {get_chat_container_style()}
-        <div id='chat-container-{bot['id']}' class='chat-container' style='height: 360px;'>
+        <div id='chat-container-{bot['id']}' class='chat-container' style='height: 660px;'>
     """
-
+    # 遍历 history 列表中的每个聊天条目 entry
     for entry in history:
+        # 获取聊天条目的内容，并使用 Markdown 扩展将其转换为 HTML
         content = entry.get('content', '')
         content_markdown = markdown.markdown(
             str(content),
@@ -132,17 +140,20 @@ def display_chat(bot, history):
         )
         
         content_markdown_repr = repr(entry['content'])
+        # 生成一个随机 ID 用于复制按钮的 JavaScript 函数
         random_id = str(random.randint(100000000000, 999999999999))
-
+        # 根据聊天条目的角色（用户或助手），生成不同的 HTML 结构和样式
         if entry['role'] == 'user':
+            # 使用 flex 布局，使得其子元素（按钮和消息内容）可以在一行内排列，并且垂直对齐到底部
+            # max-width: 80%; 限制了这个flex容器的最大宽度为父容器的80%，确保消息不会占据整个聊天窗口
             bot_html += f"""<div class='message message-user'>
                                 <div style='display: flex; align-items: flex-end; max-width: 80%;'>
-                                    <button onclick="copy_{random_id}(this)" class="copy-button">📋</button>
+                                    <button onclick="copy_{random_id}(this)" class="copy-button">📃</button>
                                     <div class='message message-user-content'>
                                         {content_markdown}
                                     </div>
                                 </div>
-                                <div class='user-avatar'>😄​</div>
+                                <div class='user-avatar'>🐵​</div>
                             </div>"""
             
         if entry['role'] == 'assistant':
@@ -152,10 +163,10 @@ def display_chat(bot, history):
                                 <div class='message-assistant-content'>
                                     {content_markdown}
                                 </div>
-                                <button onclick="copy_{random_id}(this)" ontouch="copy_{random_id}(this)" class="copy-button">📋</button>
+                                <button onclick="copy_{random_id}(this)" ontouch="copy_{random_id}(this)" class="copy-button">📃</button>
                             </div>
                         </div>"""
-        
+        # 为每个聊天条目添加一个复制按钮的 JavaScript 函数
         bot_html += f"""<script>
                             function copy_{random_id}(element){{
                                 navigator.clipboard.writeText({content_markdown_repr}).then(() => {{
@@ -167,7 +178,7 @@ def display_chat(bot, history):
                                 }});
                             }}
                         </script>"""
-        
+    # 关闭聊天容器 div，并添加 JavaScript 代码以自动滚动到最新的聊天条目
     bot_html += f"""
         </div>
         <script>
@@ -181,14 +192,26 @@ def display_chat(bot, history):
             
         </script>
     """
-    components.html(bot_html, height=400)
+    # 使用 components.html 函数将生成的 HTML 字符串渲染到页面上
+    components.html(bot_html, height=700)   # 400->
 
 def display_group_chat(bots, history):
+    """
+    显示群聊记录。
+
+    参数:
+    - bots: 包含所有机器人的列表，每个机器人是一个字典，包含'id', 'name', 和 'avatar' 等信息。
+    - history: 聊天历史记录，是一个列表，每个元素是一个包含聊天信息的字典，包括'bot_id', 'role', 'content'等。
+
+    此函数负责渲染群聊界面，根据聊天历史记录和机器人信息，生成HTML代码来显示聊天内容。
+    """
+    # 初始化聊天容器的HTML结构，并设置样式
     bot_html = f"""
         {get_chat_container_style()}
         <div id='group-chat-container' class='chat-container' style='height: 560px;'>
     """
 
+    # 遍历聊天历史记录，构建聊天内容的HTML
     for entry in history:
         bot_id = entry.get('bot_id','')
         role = entry.get('role','')
@@ -208,11 +231,12 @@ def display_group_chat(bots, history):
                 CodeExtension(),
             ]
         )
-
+        # 将聊天内容转换为Markdown格式
         content_markdown_repr = repr(entry['content'])
         random_id = str(random.randint(100000000000, 999999999999))
-
+        # 根据消息类型（工具名称、用户、机器人）构建不同的HTML结构
         if 'tool_name' in entry:
+            # 如果是工具消息
             bot_html += f"""<div class='message message-assistant'>
                             <div class='bot-avatar'>🛠️</div>
                             <div style='display: flex; flex-direction: column; max-width: 80%;'>
@@ -221,21 +245,23 @@ def display_group_chat(bots, history):
                                     <div class='message-assistant-content'>
                                         {content_markdown}
                                     </div>
-                                    <button onclick="copy_{random_id}(this)" ontouch="copy_{random_id}(this)" class="copy-button">📋</button>
+                                    <button onclick="copy_{random_id}(this)" ontouch="copy_{random_id}(this)" class="copy-button">📃</button>
                                 </div>
                             </div>
                         </div>"""
         elif role == 'user':
+            # 如果是用户消息
             bot_html += f"""<div class='message message-user'>
                                 <div style='display: flex; align-items: flex-end; max-width: 80%;'>
-                                    <button onclick="copy_{random_id}(this)" class="copy-button">📋</button>
+                                    <button onclick="copy_{random_id}(this)" class="copy-button">📃</button>
                                     <div class='message-user-content'>
                                         {content_markdown}
                                     </div>
                                 </div>
-                                <div class='user-avatar'>😄​</div>
+                                <div class='user-avatar'>🐵​</div>
                             </div>"""
         else:
+            # 如果是机器人消息
             bot = next((b for b in bots if b['id'] == bot_id), None)
             if bot:
                 avatar = bot.get('avatar', '🤖')
@@ -247,11 +273,11 @@ def display_group_chat(bots, history):
                                         <div class='message-assistant-content'>
                                             {content_markdown}
                                         </div>
-                                        <button onclick="copy_{random_id}(this)" ontouch="copy_{random_id}(this)" class="copy-button">📋</button>
+                                        <button onclick="copy_{random_id}(this)" ontouch="copy_{random_id}(this)" class="copy-button">📃</button>
                                     </div>
                                 </div>
                             </div>"""
-        
+        # 添加复制功能的JavaScript代码
         bot_html += f"""<script>
                             function copy_{random_id}(element) {{
                                 const textToCopy = {content_markdown_repr};
@@ -268,7 +294,8 @@ def display_group_chat(bots, history):
                                 }}
                             }}
                         </script>"""
-    
+        
+    # 获取聊天配置，并根据配置添加提示信息
     bot_manager = st.session_state.bot_manager
     chat_config = bot_manager.get_chat_config()
     group_user_prompt = chat_config.get('group_user_prompt', '').replace('\n', ' ').replace('\r', ' ')
@@ -277,6 +304,7 @@ def display_group_chat(bots, history):
     if group_user_prompt and history[-1].get('role') != 'user':
         bot_html += f'<div class="tips">Bot接力提示词：{html.escape(group_user_prompt)}</div>'
 
+    # 完成聊天容器的HTML结构
     bot_html += """
         </div>
         <script>
@@ -310,7 +338,7 @@ def display_group_chat(bots, history):
             function showCopyTextSuccess(element) {
                 element.innerHTML = '✅';
                 setTimeout(() => {
-                    element.innerHTML = '📋';
+                    element.innerHTML = '📃';
                 }, 500);
             }
 
@@ -338,4 +366,5 @@ def display_group_chat(bots, history):
             }
         </script>
     """
+    # 使用Streamlit的components.html函数渲染HTML
     components.html(bot_html, height=600)
